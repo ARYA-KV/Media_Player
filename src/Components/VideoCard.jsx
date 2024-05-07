@@ -1,22 +1,58 @@
 import React,{useState} from 'react'
 import { Card,Modal } from 'react-bootstrap'
+import { removeVideoAPI, saveHistoryAPI } from '../Services/allAPI';
 
-function VideoCard() {
+
+function VideoCard({displayData,setDeleteResponse,insideCategory}) {
   const [show, setShow] = useState(false);
 
   const handleClose = () => setShow(false);
-  const handleShow = () => setShow(true);
+  const handleShow = async () =>{
+    setShow(true);
+    const {caption,youtubeURL}=displayData
+    const systemTime = new Date()
+    //  console.log(systemTime);
+const formattedDate = systemTime.toLocaleString('en-US', { timeZoneName: 'short' });
+console.log(formattedDate);
+const videoHistory ={caption,youtubeURL,timeStamp:formattedDate}
+try{
+  await saveHistoryAPI(videoHistory)
+
+}catch(err){
+  console.log(err);
+}
+   
+
+  } 
+  const handleRemoveVideo = async (videoId)=>{
+    try{
+      const result = await removeVideoAPI(videoId)
+      setDeleteResponse(result.data)
+
+    }catch(err){
+      console.log(err);
+
+    }
+  }
+  const dragStarted=(e,videoId)=>{
+    console.log(`dragging started with video id : ${videoId}`);
+    e.dataTransfer.setData("videoId",videoId)
+  }
   return (
    
     <>
-    <Card >
-      <Card.Img onClick={handleShow} style={{height:'180px'}} variant="top" src="https://cdn.britannica.com/86/213486-050-077323E8/Movie-still-Emma-Watson-Florence-Pugh-Saoirse-Ronan-Eliza-Scanlen-Little-Women-2019.jpg" />
+    <Card draggable={true} onDragStart={e=>dragStarted(e,displayData?.id)}>
+      <Card.Img onClick={handleShow} style={{height:'180px'}} variant="top" src={displayData?.imgURL} />
       <Card.Body>
         <Card.Title className='d-flex align-items-center justify-content-between '>
-          <p>Caption</p>
-           <button className="btn">
+          <p>{displayData?.caption}</p>
+          {
+            !insideCategory &&
+            <button onClick={()=>handleRemoveVideo(displayData?.id)} className="btn">
             <i className="fa-solid fa-trash text-danger"></i>
-           </button>
+            </button>
+          }
+           
         </Card.Title>
         
       </Card.Body>
@@ -25,10 +61,10 @@ function VideoCard() {
    
       <Modal show={show} onHide={handleClose}>
         <Modal.Header closeButton>
-          <Modal.Title>Caption</Modal.Title>
+          <Modal.Title>{displayData?.caption}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-        <iframe width="100%" height="480" src="https://www.youtube.com/embed/AST2-4db4ic?autoplay=1" title="caption" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
+        <iframe width="100%" height="480" src={`${displayData?.youtubeURL}?autoplay=1`} title="caption"  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
         </Modal.Body>
        
       </Modal>
